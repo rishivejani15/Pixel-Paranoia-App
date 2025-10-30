@@ -1,47 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
-import 'registered.dart';
-import 'food.dart';
+import '../utils/responsive_helper.dart';
 
-class UserScreen extends StatefulWidget {
+class UserScreen extends StatelessWidget {
   const UserScreen({super.key});
-  @override
-  State<UserScreen> createState() => _UserScreenState();
-}
-
-class _UserScreenState extends State<UserScreen> {
-  int _index = 2; // user tab is default selected (rightmost)
-
-  void _onTab(int i) {
-    if (i == 0) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegisteredScreen(key: UniqueKey())));
-    } else if (i == 1) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => FoodScreen(key: UniqueKey())));
-    } else {
-      setState(() => _index = 2); // just highlight user
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    return const Scaffold(
+      body: UserScreenContent(),
+    );
+  }
+}
+
+class UserScreenContent extends StatelessWidget {
+  const UserScreenContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final responsive = ResponsiveHelper(context);
     final provider = Provider.of<UserProvider>(context);
-    final totalRegistered = provider.totalRegistered ?? 0;
-    final hadFood = provider.totalHadFood ?? 0;
+    final totalRegistered = provider.totalRegistered;
+    final hadFood = provider.totalHadFood;
+    
     return Scaffold(
       backgroundColor: const Color(0xFF1A0D2E),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D1B47),
-        elevation: 8,
+        elevation: responsive.spacing(8),
         shadowColor: Colors.deepPurple.withOpacity(0.5),
-        title: const Text(
-          '🎃 User Status',
+        title: Text(
+          '👥 User Dashboard',
           style: TextStyle(
             fontFamily: 'Creepster',
-            fontSize: 24,
+            fontSize: responsive.fontSize(26),
             color: Colors.orange,
             fontWeight: FontWeight.bold,
-            shadows: [
+            letterSpacing: 1.2,
+            shadows: const [
               Shadow(
                 color: Colors.deepOrange,
                 blurRadius: 10,
@@ -60,108 +57,38 @@ class _UserScreenState extends State<UserScreen> {
                 child: CircularProgressIndicator(color: Colors.orange),
               )
             : SafeArea(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Column(children: [ _buildCounters(totalRegistered, hadFood), ]),
-                      const SizedBox(height: 20),
-                      if (provider.usersList.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 60),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.hourglass_empty, size: 70, color: Colors.orange.withOpacity(0.7)),
-                              const SizedBox(height: 32),
-                              Text(
-                                'No users registered yet!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.orange.shade200,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.deepOrange.withOpacity(0.18),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Tap the Register tab below to scan and register someone! 🎃',
-                                style: const TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 15,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        Column(
-                          children:
-                              provider.usersList
-                                  .map(
-                                    (user) => Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      child: _buildUserCard(
-                                        user.email, // show email
-                                        user.registered,
-                                        user.hadFood,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
+                child: Column(
+                  children: [
+                    // Stats Header Section
+                    _buildStatsHeader(context, totalRegistered, hadFood),
+                    
+                    // Divider
+                    Container(
+                      margin: EdgeInsets.symmetric(
+                        horizontal: responsive.spacing(16),
+                        vertical: responsive.spacing(8),
+                      ),
+                      height: 1,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.orange.withOpacity(0.3),
+                            Colors.transparent,
+                          ],
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+                    
+                    // Users List Section
+                    Expanded(
+                      child: provider.usersList.isEmpty
+                          ? _buildEmptyState(context)
+                          : _buildUsersList(context, provider.usersList),
+                    ),
+                  ],
                 ),
               ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: _onTab,
-        backgroundColor: const Color(0xFF2D1B47),
-        selectedItemColor: Colors.orange,
-        unselectedItemColor: Colors.white70,
-        type: BottomNavigationBarType.fixed,
-        elevation: 12,
-        selectedLabelStyle: const TextStyle(
-          fontFamily: 'Creepster',
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-          color: Colors.orange,
-          shadows: [
-            Shadow(
-              offset: Offset(0, 0),
-              blurRadius: 8,
-              color: Colors.deepOrange,
-            ),
-          ],
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontFamily: 'Creepster',
-          fontSize: 13,
-          color: Colors.white70,
-        ),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.how_to_reg),
-            label: 'Register',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu),
-            label: 'Food',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
-        ],
       ),
     );
   }
@@ -184,96 +111,68 @@ class _UserScreenState extends State<UserScreen> {
     );
   }
 
-  // 👻 Title
-  Widget _buildPageTitle() {
+  // 📊 Stats Header
+  Widget _buildStatsHeader(BuildContext context, int registered, int hadFood) {
+    final responsive = ResponsiveHelper(context);
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      margin: EdgeInsets.all(responsive.spacing(16)),
+      padding: EdgeInsets.all(responsive.spacing(20)),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.orange.withOpacity(0.6), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.3),
-            blurRadius: 15,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: const Text(
-        '🧙 Scanned Users',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: Colors.orange,
-          shadows: [
-            Shadow(
-              color: Colors.deepOrange,
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 🎃 Counters
-  Widget _buildCounters(int registered, int hadFood) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        _buildCounterBadge(
-          label: 'Registered',
-          count: registered,
-          icon: Icons.people,
-        ),
-        const SizedBox(height: 8),
-        _buildCounterBadge(
-          label: 'Had Food',
-          count: hadFood,
-          icon: Icons.restaurant_menu,
-        ),
-      ],
-    );
-  }
-
-  // 🕸 Counter Badge
-  Widget _buildCounterBadge({
-    required String label,
-    required int count,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            Colors.orange.withOpacity(0.9),
-            Colors.deepOrange.withOpacity(0.8),
+            Color(0xFF3D2A54),
+            Color(0xFF2D1B47),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.orange.withOpacity(0.7), width: 1.5),
+        borderRadius: BorderRadius.circular(responsive.radius(20)),
+        border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withOpacity(0.4),
-            blurRadius: 8,
-            spreadRadius: 1,
-            offset: const Offset(0, 3),
+            color: Colors.orange.withOpacity(0.15),
+            blurRadius: responsive.spacing(20),
+            spreadRadius: responsive.spacing(2),
+            offset: Offset(0, responsive.spacing(8)),
           ),
         ],
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 16),
-          const SizedBox(width: 6),
-          Text(
-            '$label: $count',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          Expanded(
+            child: _buildStatCard(
+              context,
+              icon: Icons.how_to_reg,
+              label: 'Registered',
+              count: registered,
+              color: Colors.blue,
+              gradientColors: [Colors.blue.shade400, Colors.blue.shade600],
+            ),
+          ),
+          Container(
+            width: 1,
+            height: responsive.spacing(60),
+            margin: EdgeInsets.symmetric(horizontal: responsive.spacing(16)),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.orange.withOpacity(0.3),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: _buildStatCard(
+              context,
+              icon: Icons.restaurant_menu,
+              label: 'Had Food',
+              count: hadFood,
+              color: Colors.green,
+              gradientColors: [Colors.green.shade400, Colors.green.shade600],
             ),
           ),
         ],
@@ -281,168 +180,340 @@ class _UserScreenState extends State<UserScreen> {
     );
   }
 
- // Replace your existing _buildUserCard with this function:
-Widget _buildUserCard(String email, bool registered, bool hadFood) {
-  final statusColor = hadFood ? Colors.green : Colors.orange;
-  final foodStatus = hadFood ? '✅ Done' : '⏳ Pending';
-
-  return Container(
-    width: double.infinity,
-    margin: const EdgeInsets.symmetric(vertical: 8),
-    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF3D2A54), Color(0xFF2D1B47)],
-      ),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.orange.withOpacity(0.25), width: 1.5),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.orange.withOpacity(0.08),
-          blurRadius: 12,
-          spreadRadius: 1,
-          offset: const Offset(0, 6),
-        ),
-      ],
-    ),
-    child: Row(
+  // 📈 Stat Card
+  Widget _buildStatCard(BuildContext context, {
+    required IconData icon,
+    required String label,
+    required int count,
+    required Color color,
+    required List<Color> gradientColors,
+  }) {
+    final responsive = ResponsiveHelper(context);
+    return Column(
       children: [
-        // EMAIL (left, takes remaining space)
-        Expanded(
-          flex: 5,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              email,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+        Container(
+          padding: EdgeInsets.all(responsive.spacing(12)),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: gradientColors),
+            borderRadius: BorderRadius.circular(responsive.radius(12)),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.4),
+                blurRadius: responsive.spacing(12),
+                spreadRadius: responsive.spacing(1),
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: responsive.iconSize(28)),
+        ),
+        SizedBox(height: responsive.spacing(12)),
+        Text(
+          count.toString(),
+          style: TextStyle(
+            fontSize: responsive.fontSize(32),
+            fontWeight: FontWeight.bold,
+            color: Colors.orange,
+            shadows: const [
+              Shadow(
+                color: Colors.deepOrange,
+                blurRadius: 8,
+              ),
+            ],
           ),
         ),
+        SizedBox(height: responsive.spacing(4)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: responsive.fontSize(13),
+            fontWeight: FontWeight.w600,
+            color: Colors.white70,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
 
-        // Vertical divider
-        Container(width: 1, height: 36, color: Colors.white10),
-
-        // REGISTERED column
-        Expanded(
-          flex: 2,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Registered',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white70,
+  // 📭 Empty State
+  Widget _buildEmptyState(BuildContext context) {
+    final responsive = ResponsiveHelper(context);
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(responsive.spacing(32)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(responsive.spacing(24)),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.3),
+                  width: 2,
                 ),
               ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: registered ? Colors.green.withOpacity(0.18) : Colors.red.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: registered ? Colors.green.withOpacity(0.9) : Colors.red.withOpacity(0.9),
-                    width: 1,
-                  ),
+              child: Icon(
+                Icons.people_outline,
+                size: responsive.iconSize(80),
+                color: Colors.orange.withOpacity(0.6),
+              ),
+            ),
+            SizedBox(height: responsive.spacing(32)),
+            Text(
+              'No Users Yet',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.orange.shade200,
+                fontSize: responsive.fontSize(26),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+            SizedBox(height: responsive.spacing(12)),
+            Text(
+              'Start scanning QR codes to register users\nand they\'ll appear here!',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: responsive.fontSize(15),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: responsive.spacing(24)),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: responsive.spacing(20),
+                vertical: responsive.spacing(12),
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.orange.withOpacity(0.2), Colors.deepOrange.withOpacity(0.2)],
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                borderRadius: BorderRadius.circular(responsive.radius(25)),
+                border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.qr_code_scanner, color: Colors.orange, size: responsive.iconSize(20)),
+                  SizedBox(width: responsive.spacing(8)),
+                  Text(
+                    'Tap Register tab to get started',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: responsive.fontSize(14),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 📋 Users List
+  Widget _buildUsersList(BuildContext context, List usersList) {
+    final responsive = ResponsiveHelper(context);
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(
+        horizontal: responsive.spacing(16),
+        vertical: responsive.spacing(8),
+      ),
+      itemCount: usersList.length,
+      itemBuilder: (context, index) {
+        final user = usersList[index];
+        return _buildUserCard(
+          context,
+          user.email,
+          user.registered,
+          user.hadFood,
+          index,
+        );
+      },
+    );
+  }
+
+  // 👤 User Card
+  Widget _buildUserCard(BuildContext context, String email, bool registered, bool hadFood, int index) {
+    final responsive = ResponsiveHelper(context);
+    return Container(
+      margin: EdgeInsets.only(bottom: responsive.spacing(12)),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF3D2A54),
+            Color(0xFF2D1B47),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(responsive.radius(16)),
+        border: Border.all(color: Colors.orange.withOpacity(0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: responsive.spacing(10),
+            spreadRadius: responsive.spacing(1),
+            offset: Offset(0, responsive.spacing(4)),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(responsive.radius(16)),
+          onTap: () {
+            // Optional: Add tap functionality for user details
+          },
+          child: Padding(
+            padding: EdgeInsets.all(responsive.spacing(16)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Row: User number + Email
+                Row(
                   children: [
-                    Icon(registered ? Icons.check_circle : Icons.cancel,
-                        size: 16, color: registered ? Colors.green : Colors.red),
-                    const SizedBox(width: 6),
-                    Text(
-                      registered ? 'Yes' : 'No',
-                      style: TextStyle(
-                        color: registered ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                    // User Number Badge
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: responsive.spacing(10),
+                        vertical: responsive.spacing(6),
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.orange.shade600, Colors.deepOrange.shade700],
+                        ),
+                        borderRadius: BorderRadius.circular(responsive.radius(8)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.4),
+                            blurRadius: responsive.spacing(6),
+                            spreadRadius: responsive.spacing(1),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '#${index + 1}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: responsive.fontSize(14),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: responsive.spacing(12)),
+                    // Email
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            email,
+                            style: TextStyle(
+                              fontSize: responsive.fontSize(16),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: responsive.spacing(2)),
+                          Text(
+                            'User Account',
+                            style: TextStyle(
+                              fontSize: responsive.fontSize(11),
+                              color: Colors.white54,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                
+                SizedBox(height: responsive.spacing(16)),
+                
+                // Status Row: Registration + Food
+                Row(
+                  children: [
+                    // Registration Status
+                    Expanded(
+                      child: _buildStatusBadge(
+                        context,
+                        icon: registered ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                        label: 'Registration',
+                        value: registered ? 'Verified' : 'Pending',
+                        color: registered ? Colors.green : Colors.red,
+                        isActive: registered,
+                      ),
+                    ),
+                    SizedBox(width: responsive.spacing(12)),
+                    // Food Status
+                    Expanded(
+                      child: _buildStatusBadge(
+                        context,
+                        icon: hadFood ? Icons.restaurant_rounded : Icons.hourglass_empty_rounded,
+                        label: 'Food',
+                        value: hadFood ? 'Completed' : 'Pending',
+                        color: hadFood ? Colors.green : Colors.orange,
+                        isActive: hadFood,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-
-        // Vertical divider
-        Container(width: 1, height: 36, color: Colors.white10),
-
-        // FOOD STATUS column
-        Expanded(
-          flex: 3,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Food Status',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: statusColor.withOpacity(0.9), width: 1),
-                ),
-                child: Text(
-                  foodStatus,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
-  // 🎃 Status Chip
-  Widget _buildStatusChip(
-    String label,
-    bool value,
-    Color color, {
-    String? text,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withOpacity(0.5), width: 1),
       ),
-      child: Row(
+    );
+  }
+
+  // 🏷️ Status Badge
+  Widget _buildStatusBadge(BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    required bool isActive,
+  }) {
+    final responsive = ResponsiveHelper(context);
+    return Container(
+      padding: EdgeInsets.all(responsive.spacing(12)),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(responsive.radius(12)),
+        border: Border.all(
+          color: color.withOpacity(isActive ? 0.5 : 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
         children: [
-          Icon(
-            value ? Icons.check_circle : Icons.cancel,
-            color: color,
-            size: 18,
-          ),
-          const SizedBox(width: 6),
+          Icon(icon, color: color, size: responsive.iconSize(24)),
+          SizedBox(height: responsive.spacing(6)),
           Text(
-            text ?? label,
+            value,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
               color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: responsive.fontSize(13),
+            ),
+          ),
+          SizedBox(height: responsive.spacing(2)),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white60,
+              fontSize: responsive.fontSize(10),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

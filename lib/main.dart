@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/user_provider.dart';
-import 'screens/registered.dart';
-import 'screens/food.dart';
-import 'screens/user.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(
@@ -22,7 +20,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pixel Paranoia',
       debugShowCheckedModeBanner: false,
-      home: const UserScreen(),
+      home: const HomeScreen(),
     );
   }
 }

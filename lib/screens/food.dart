@@ -11,13 +11,15 @@ class FoodScreen extends StatefulWidget {
 }
 
 class FoodScreenState extends State<FoodScreen>
-    with SingleTickerProviderStateMixin {
-  final MobileScannerController _cameraController = MobileScannerController();
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  MobileScannerController? _cameraController;
   late final AnimationController _scanController;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeCamera();
     _scanController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
@@ -27,11 +29,44 @@ class FoodScreenState extends State<FoodScreen>
     Future.microtask(() => Provider.of<UserProvider>(context, listen: false).clearSingleUser());
   }
 
+  void _initializeCamera() async {
+    _cameraController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      autoStart: true,
+    );
+    // Give camera time to initialize
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scanController.dispose();
-    _cameraController.dispose();
+    _cameraController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_cameraController == null) return;
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _cameraController?.start();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _cameraController?.stop();
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
   }
 
   Future<void> _onScan(BuildContext ctx, String content) async {
@@ -46,13 +81,19 @@ class FoodScreenState extends State<FoodScreen>
         const SnackBar(content: Text('Invalid QR format')),
       );
       foodProvider.setProcessing(false);
+      foodProvider.setLastScannedQr(null);
       return;
     }
     final qrId = parts.last;
     final userProvider = Provider.of<UserProvider>(ctx, listen: false);
-    await userProvider.markFood(qrId, context: ctx);
+    
+    // Only pass context if still mounted to prevent SnackBar on wrong screen
+    await userProvider.markFood(qrId, context: mounted ? ctx : null);
     if (!mounted) return;
+    
+    // Clear immediately after backend upload completes
     foodProvider.setProcessing(false);
+    foodProvider.setLastScannedQr(null);
   }
 
   @override
@@ -102,16 +143,18 @@ class FoodScreenState extends State<FoodScreen>
                   alignment: Alignment.center,
                   children: [
                     Positioned.fill(
-                      child: MobileScanner(
-                        controller: _cameraController,
-                        fit: BoxFit.cover,
-                        onDetect: (capture) {
-                          if (capture.barcodes.isNotEmpty) {
-                            final raw = capture.barcodes.first.rawValue ?? '';
-                            if (raw.isNotEmpty) _onScan(ctx, raw);
-                          }
-                        },
-                      ),
+                      child: _cameraController == null
+                          ? const Center(child: CircularProgressIndicator(color: Colors.orange))
+                          : MobileScanner(
+                              controller: _cameraController!,
+                              fit: BoxFit.cover,
+                              onDetect: (capture) {
+                                if (capture.barcodes.isNotEmpty) {
+                                  final raw = capture.barcodes.first.rawValue ?? '';
+                                  if (raw.isNotEmpty) _onScan(ctx, raw);
+                                }
+                              },
+                            ),
                     ),
                     Positioned.fill(
                       child: IgnorePointer(
