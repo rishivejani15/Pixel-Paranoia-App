@@ -26,7 +26,9 @@ class FoodScreenState extends State<FoodScreen>
       lowerBound: 0.0,
       upperBound: 1.0,
     )..repeat(reverse: true);
-    Future.microtask(() => Provider.of<UserProvider>(context, listen: false).clearSingleUser());
+    Future.microtask(
+      () => Provider.of<UserProvider>(context, listen: false).clearSingleUser(),
+    );
   }
 
   void _initializeCamera() async {
@@ -54,7 +56,7 @@ class FoodScreenState extends State<FoodScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (_cameraController == null) return;
-    
+
     switch (state) {
       case AppLifecycleState.resumed:
         _cameraController?.start();
@@ -71,26 +73,27 @@ class FoodScreenState extends State<FoodScreen>
 
   Future<void> _onScan(BuildContext ctx, String content) async {
     final foodProvider = Provider.of<FoodProvider>(ctx, listen: false);
-    if (foodProvider.processing || content == foodProvider.lastScannedQr) return;
+    if (foodProvider.processing || content == foodProvider.lastScannedQr)
+      return;
     foodProvider.setProcessing(true);
     foodProvider.setLastScannedQr(content);
     final parts = content.split('|');
     if (parts.length < 3) {
       if (!mounted) return;
-      ScaffoldMessenger.of(ctx).showSnackBar(
-        const SnackBar(content: Text('Invalid QR format')),
-      );
+      ScaffoldMessenger.of(
+        ctx,
+      ).showSnackBar(const SnackBar(content: Text('Invalid QR format')));
       foodProvider.setProcessing(false);
       foodProvider.setLastScannedQr(null);
       return;
     }
     final qrId = parts.last;
     final userProvider = Provider.of<UserProvider>(ctx, listen: false);
-    
+
     // Only pass context if still mounted to prevent SnackBar on wrong screen
     await userProvider.markFood(qrId, context: mounted ? ctx : null);
     if (!mounted) return;
-    
+
     // Clear immediately after backend upload completes
     foodProvider.setProcessing(false);
     foodProvider.setLastScannedQr(null);
@@ -138,23 +141,30 @@ class FoodScreenState extends State<FoodScreen>
                 final top = (fullH - cutOutH) / 2;
                 const double innerPadding = 8.0;
                 const double lineHeight = 3.0;
-                final travelHeight = (cutOutH - innerPadding * 2 - lineHeight).clamp(0.0, double.infinity);
+                final travelHeight = (cutOutH - innerPadding * 2 - lineHeight)
+                    .clamp(0.0, double.infinity);
                 return Stack(
                   alignment: Alignment.center,
                   children: [
                     Positioned.fill(
-                      child: _cameraController == null
-                          ? const Center(child: CircularProgressIndicator(color: Colors.orange))
-                          : MobileScanner(
-                              controller: _cameraController!,
-                              fit: BoxFit.cover,
-                              onDetect: (capture) {
-                                if (capture.barcodes.isNotEmpty) {
-                                  final raw = capture.barcodes.first.rawValue ?? '';
-                                  if (raw.isNotEmpty) _onScan(ctx, raw);
-                                }
-                              },
-                            ),
+                      child:
+                          _cameraController == null
+                              ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.orange,
+                                ),
+                              )
+                              : MobileScanner(
+                                controller: _cameraController!,
+                                fit: BoxFit.cover,
+                                onDetect: (capture) {
+                                  if (capture.barcodes.isNotEmpty) {
+                                    final raw =
+                                        capture.barcodes.first.rawValue ?? '';
+                                    if (raw.isNotEmpty) _onScan(ctx, raw);
+                                  }
+                                },
+                              ),
                     ),
                     Positioned.fill(
                       child: IgnorePointer(
@@ -201,7 +211,8 @@ class FoodScreenState extends State<FoodScreen>
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.purpleAccent.withOpacity(0.6),
+                                          color: Colors.purpleAccent
+                                              .withOpacity(0.6),
                                           blurRadius: 12,
                                           spreadRadius: 1,
                                         ),
@@ -224,13 +235,19 @@ class FoodScreenState extends State<FoodScreen>
                           Text(
                             'Place the QR code inside the frame',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white70, fontSize: 15),
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 15,
+                            ),
                           ),
                           SizedBox(height: 6),
                           Text(
                             'Scans automatically',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white38, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),

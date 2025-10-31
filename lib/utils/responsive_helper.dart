@@ -57,11 +57,7 @@ class ResponsiveHelper {
   bool get isDesktop => screenWidth >= 1024;
 
   // Responsive value based on device
-  T responsiveValue<T>({
-    required T mobile,
-    T? tablet,
-    T? desktop,
-  }) {
+  T responsiveValue<T>({required T mobile, T? tablet, T? desktop}) {
     if (isDesktop && desktop != null) return desktop;
     if (isTablet && tablet != null) return tablet;
     return mobile;

@@ -27,7 +27,9 @@ class RegisteredScreenState extends State<RegisteredScreen>
       lowerBound: 0.0,
       upperBound: 1.0,
     )..repeat(reverse: true);
-    Future.microtask(() => Provider.of<UserProvider>(context, listen: false).clearSingleUser());
+    Future.microtask(
+      () => Provider.of<UserProvider>(context, listen: false).clearSingleUser(),
+    );
   }
 
   void _initializeCamera() async {
@@ -55,7 +57,7 @@ class RegisteredScreenState extends State<RegisteredScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (_cameraController == null) return;
-    
+
     switch (state) {
       case AppLifecycleState.resumed:
         _cameraController?.start();
@@ -79,27 +81,29 @@ class RegisteredScreenState extends State<RegisteredScreen>
     final parts = content.split('|');
     if (parts.length < 4) {
       if (!mounted) return;
-      ScaffoldMessenger.of(ctx).showSnackBar(
-        const SnackBar(content: Text('Invalid QR format')),
-      );
+      ScaffoldMessenger.of(
+        ctx,
+      ).showSnackBar(const SnackBar(content: Text('Invalid QR format')));
       regProvider.setProcessing(false);
       regProvider.setLastScannedQr(null);
       return;
     }
-    final name = parts[1].trim(); // assumes 0=name, 1=email, 2=qrId OR 1=name, 2=email, 3=qrId per your QR structure.
+    final name =
+        parts[1]
+            .trim(); // assumes 0=name, 1=email, 2=qrId OR 1=name, 2=email, 3=qrId per your QR structure.
     final email = parts[2].trim();
     final qrId = parts[3].trim();
     final userProvider = Provider.of<UserProvider>(ctx, listen: false);
-    
+
     // Only pass context if still mounted to prevent SnackBar on wrong screen
     await userProvider.registerUser(
-      qrId, 
-      email, 
-      context: mounted ? ctx : null, 
+      qrId,
+      email,
+      context: mounted ? ctx : null,
       name: name,
     );
     if (!mounted) return;
-    
+
     // Clear immediately after backend upload completes
     regProvider.setProcessing(false);
     regProvider.setLastScannedQr(null);
@@ -138,126 +142,139 @@ class RegisteredScreenState extends State<RegisteredScreen>
               centerTitle: true,
               iconTheme: const IconThemeData(color: Colors.orange),
             ),
-            body: LayoutBuilder(builder: (context, constraints) {
-              final fullW = constraints.maxWidth;
-              final fullH = constraints.maxHeight;
-              final cutOutW = fullW * 0.78;
-              final cutOutH = cutOutW;
-              final left = (fullW - cutOutW) / 2;
-              final top = (fullH - cutOutH) / 2;
-              const innerPadding = 8.0;
-              final scanLineTravelHeight = (cutOutH - (innerPadding * 2)) - 3;
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    child: _cameraController == null
-                        ? const Center(child: CircularProgressIndicator(color: Colors.orange))
-                        : MobileScanner(
-                            controller: _cameraController!,
-                            fit: BoxFit.cover,
-                            onDetect: (capture) {
-                              if (capture.barcodes.isNotEmpty) {
-                                final raw = capture.barcodes.first.rawValue ?? '';
-                                if (raw.isNotEmpty) _onScan(ctx, raw);
-                              }
-                            },
-                          ),
-                  ),
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: ScannerOverlay(
-                        borderRadius: 20,
-                        overlayColor: const Color(0xAA0B001A),
-                        cutOutWidth: cutOutW,
-                        cutOutHeight: cutOutH,
-                        cornerColor: const Color(0xFF9B59FF),
-                        cornerLength: 32,
-                        cornerThickness: 4,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: left + innerPadding,
-                    width: cutOutW - (innerPadding * 2),
-                    top: top + innerPadding,
-                    height: cutOutH - (innerPadding * 2),
-                    child: IgnorePointer(
-                      child: AnimatedBuilder(
-                        animation: _scanController,
-                        builder: (context, child) {
-                          final t = _scanController.value;
-                          final y = scanLineTravelHeight * t;
-                          return Stack(children: [
-                            Positioned(
-                              top: y,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.purpleAccent.withOpacity(0.95),
-                                      Colors.transparent,
-                                    ],
-                                    stops: const [0.0, 0.5, 1.0],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          Colors.purpleAccent.withOpacity(0.6),
-                                      blurRadius: 12,
-                                      spreadRadius: 1,
-                                    ),
-                                  ],
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                final fullW = constraints.maxWidth;
+                final fullH = constraints.maxHeight;
+                final cutOutW = fullW * 0.78;
+                final cutOutH = cutOutW;
+                final left = (fullW - cutOutW) / 2;
+                final top = (fullH - cutOutH) / 2;
+                const innerPadding = 8.0;
+                final scanLineTravelHeight = (cutOutH - (innerPadding * 2)) - 3;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child:
+                          _cameraController == null
+                              ? const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.orange,
                                 ),
+                              )
+                              : MobileScanner(
+                                controller: _cameraController!,
+                                fit: BoxFit.cover,
+                                onDetect: (capture) {
+                                  if (capture.barcodes.isNotEmpty) {
+                                    final raw =
+                                        capture.barcodes.first.rawValue ?? '';
+                                    if (raw.isNotEmpty) _onScan(ctx, raw);
+                                  }
+                                },
                               ),
-                            ),
-                          ]);
-                        },
+                    ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: ScannerOverlay(
+                          borderRadius: 20,
+                          overlayColor: const Color(0xAA0B001A),
+                          cutOutWidth: cutOutW,
+                          cutOutHeight: cutOutH,
+                          cornerColor: const Color(0xFF9B59FF),
+                          cornerLength: 32,
+                          cornerThickness: 4,
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: top + cutOutH + 16,
-                    child: Column(
-                      children: const [
-                        Text(
-                          'Place the QR code inside the frame',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: Colors.white70, fontSize: 15),
+                    Positioned(
+                      left: left + innerPadding,
+                      width: cutOutW - (innerPadding * 2),
+                      top: top + innerPadding,
+                      height: cutOutH - (innerPadding * 2),
+                      child: IgnorePointer(
+                        child: AnimatedBuilder(
+                          animation: _scanController,
+                          builder: (context, child) {
+                            final t = _scanController.value;
+                            final y = scanLineTravelHeight * t;
+                            return Stack(
+                              children: [
+                                Positioned(
+                                  top: y,
+                                  left: 0,
+                                  right: 0,
+                                  child: Container(
+                                    height: 3,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.purpleAccent.withOpacity(0.95),
+                                          Colors.transparent,
+                                        ],
+                                        stops: const [0.0, 0.5, 1.0],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.purpleAccent
+                                              .withOpacity(0.6),
+                                          blurRadius: 12,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Scans automatically',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: Colors.white38, fontSize: 13),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                  if (regProvider.processing || userProvider.loading)
-                    const Center(
-                      child: CircularProgressIndicator(color: Colors.indigo),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: top + cutOutH + 16,
+                      child: Column(
+                        children: const [
+                          Text(
+                            'Place the QR code inside the frame',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 15,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Scans automatically',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                ],
-              );
-            }),
+                    if (regProvider.processing || userProvider.loading)
+                      const Center(
+                        child: CircularProgressIndicator(color: Colors.indigo),
+                      ),
+                  ],
+                );
+              },
+            ),
           );
         },
       ),
     );
   }
 }
-
 
 /* ---------- ScannerOverlay and painters ---------- */
 class ScannerOverlay extends StatelessWidget {
